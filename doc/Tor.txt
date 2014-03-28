@@ -1,9 +1,12 @@
+Copyright (c) 2014 NobleCoin Developers (Packaged for Version 1.1 2014)
+Distributed under the MIT/X11 software license, see the accompanying file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 TOR SUPPORT IN NOBLECOIN
 ======================
 
-It is possible to run NobleCoin as a Tor hidden service, and connect to such services.
+It is possible to run NobleCOin as a Tor hidden service, and connect to such services.
 
-The following assumes you have a Tor proxy running on port 9050. Many distributions
+The following directions assume you have a Tor proxy running on port 9050. Many distributions
 default to having a SOCKS proxy listening on port 9050, but others may not.
 In particular, the Tor Browser Bundle defaults to listening on a random port. See
 https://www.torproject.org/docs/faq.html.en#TBBSocksPort for how to properly
@@ -28,10 +31,6 @@ outgoing connections be anonimized, but more is possible.
                 need to set this if it's the same as -proxy. You can use -notor
                 to explicitly disable access to hidden service.
 
--dnsseed        DNS seeds are not resolved directly when a SOCKS5 proxy server is
-                set. Rather, a short-lived proxy connection to the dns seed
-                hostname is attempted, and peer addresses are requested.
-
 -listen         When using -proxy, listening is disabled by default. If you want
                 to run a hidden service (see next section), you'll need to enable
                 it explicitly.
@@ -43,7 +42,7 @@ outgoing connections be anonimized, but more is possible.
 
 In a typical situation, this suffices to run behind a Tor proxy:
 
-  ./noblecoin -proxy=127.0.0.1:9050
+  ./noblecoind -proxy=127.0.0.1:9050
 
 
 2. Run a noblecoin hidden server
@@ -56,8 +55,8 @@ config file):
   HiddenServiceDir /var/lib/tor/noblecoin-service/
   HiddenServicePort 9333 127.0.0.1:9333
 
-The directory can be different of course, but (both) 9333's should be equal to your
-noblecoind's P2P listen port (9333 by default).
+The directory can be different of course, but (both) port numbers should be equal to
+your noblecoind's P2P listen port (9333 by default).
 
 -externalip=X   You can tell noblecoin about its publicly reachable address using
                 this option, and this can be a .onion address. Given the above
@@ -81,7 +80,7 @@ In a typical situation, where you're only reachable via Tor, this should suffice
 
   ./noblecoind -proxy=127.0.0.1:9050 -externalip=57qr3yd1nyntf5k.onion -listen
 
-(obviously replace the Onion address with your own). If you don't care too much
+(obviously, replace the Onion address with your own). If you don't care too much
 about hiding your node, and want to be reachable on IPv4 as well, additionally
 specify:
 
@@ -92,5 +91,5 @@ and open port 9333 on your firewall (or use -upnp).
 If you only want to use Tor to reach onion addresses, but not use it as a proxy
 for normal IPv4/IPv6 communication, use:
 
-  ./noblecoin -tor=127.0.0.1:9050 -externalip=57qr3yd1nyntf5k.onion -discover
+  ./noblecoind -tor=127.0.0.1:9050 -externalip=57qr3yd1nyntf5k.onion -discover
 
