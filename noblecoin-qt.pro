@@ -9,15 +9,14 @@ windows:LIBS += -lshlwapi
 LIBS += $$join(BOOST_LIB_PATH,,-L,) $$join(BDB_LIB_PATH,,-L,) $$join(OPENSSL_LIB_PATH,,-L,) $$join(QRENCODE_LIB_PATH,,-L,)
 LIBS += -lssl -lcrypto -ldb_cxx$$BDB_LIB_SUFFIX
 windows:LIBS += -lws2_32 -lole32 -loleaut32 -luuid -lgdi32
-#LIBS += -lboost_system-mgw46-mt-1_54 -lboost_filesystem-mgw46-mt-1_54 -lboost_program_options-mgw46-mt-1_54 -lboost_thread-mgw46-mt-1_54
-#BOOST_LIB_SUFFIX=-mgw46-mt-1_54
-LIBS += -lboost_system -lboost_filesystem -lboost_program_options -lboost_thread
-BOOST_INCLUDE_PATH=C:/deps/boost_1_54_0
-BOOST_LIB_PATH=C:/deps/boost_1_54_0/stage/lib
-BDB_INCLUDE_PATH=c:/deps/db-4.8.30.NC/build_windows
-BDB_LIB_PATH=c:/deps/db-4.8.30.NC/build_windows
-OPENSSL_INCLUDE_PATH=C:/deps/openssl-1.0.1g/include
-OPENSSL_LIB_PATH=C:/deps/openssl-1.0.1g
+LIBS += -lboost_system-mgw46-mt-1_54 -lboost_filesystem-mgw46-mt-1_54 -lboost_program_options-mgw46-mt-1_54 -lboost_thread-mgw46-mt-1_54
+BOOST_LIB_SUFFIX=-mgw46-mt-1_54
+BOOST_INCLUDE_PATH=C:/NobleCoin/libs/boost_1_54_0
+BOOST_LIB_PATH=C:/NobleCoin/libs/boost_1_54_0/stage/libs
+BDB_INCLUDE_PATH=c:/NobleCoin/libs/db-4.8.30.NC/build_windows
+BDB_LIB_PATH=c:/NobleCoin/libs/db-4.8.30.NC/build_windows
+OPENSSL_INCLUDE_PATH=C:/NobleCoin/libs/openssl-1.0.1g/include
+OPENSSL_LIB_PATH=C:/NobleCoin/libs/openssl-1.0.1g
 
  
  
@@ -364,5 +363,3 @@ contains(RELEASE, 1) {
 }
 
 system($$QMAKE_LRELEASE -silent $$_PRO_FILE_)
-
-
