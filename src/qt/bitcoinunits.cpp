@@ -34,9 +34,9 @@ QString BitcoinUnits::name(int unit)
 {
     switch(unit)
     {
-    case BTC: return QString("NOBLE");
-    case mBTC: return QString("mNOBLE");
-    case uBTC: return QString::fromUtf8("μNOBLE");
+    case BTC: return QString("LTC");
+    case mBTC: return QString("mLTC");
+    case uBTC: return QString::fromUtf8("μLTC");
     default: return QString("???");
     }
 }
@@ -45,9 +45,9 @@ QString BitcoinUnits::description(int unit)
 {
     switch(unit)
     {
-    case BTC: return QString("NobleCoins");
-    case mBTC: return QString("Milli-NobleCoins (1 / 1,000)");
-    case uBTC: return QString("Micro-NobleCoins (1 / 1,000,000)");
+    case BTC: return QString("Litecoins");
+    case mBTC: return QString("Milli-Litecoins (1 / 1,000)");
+    case uBTC: return QString("Micro-Litecoins (1 / 1,000,000)");
     default: return QString("???");
     }
 }
@@ -99,7 +99,7 @@ QString BitcoinUnits::format(int unit, qint64 n, bool fPlus)
     QString quotient_str = QString::number(quotient);
     QString remainder_str = QString::number(remainder).rightJustified(num_decimals, '0');
 
-    // Right-trim excess 0's after the decimal point
+    // Right-trim excess zeros after the decimal point
     int nTrim = 0;
     for (int i = remainder_str.size()-1; i>=2 && (remainder_str.at(i) == '0'); --i)
         ++nTrim;
@@ -179,3 +179,4 @@ QVariant BitcoinUnits::data(const QModelIndex &index, int role) const
     }
     return QVariant();
 }
+
