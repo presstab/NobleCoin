@@ -39,3 +39,4 @@ private:
 };
 
 #endif // QRCODEDIALOG_H
+
