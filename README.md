@@ -1,11 +1,25 @@
-NobleCoin (NOBLE) - NobleCoin is a new generation of scrypt coin that is descendant of Litecoin. 
+NobleCoin integration/staging tree
+================================
+
+https://www.noblemovement.com
+
+Copyright (c) 2009-2014 Bitcoin Developers
+Copyright (c) 2011-2014 Litecoin Developers
+Copyright (c) 2014 NobleCoin Developers
+
+What is NobleCoin?
+----------------
+
+NobleCoin (NOBL) - NobleCoin is a new generation of scrypt coin that is descendant of Litecoin. 
 Like Litecoin it uses scrypt as a proof of work scheme.
 
+For more information, as well as an immediately useable, binary version of
+the NobleCoin client sofware, see https://www.noblemovement.com
 
 License
 -------
 
-Litecoin is released under the terms of the MIT license. See `COPYING` for more
+NobleCoin is released under the terms of the MIT license. See `COPYING` for more
 information or see http://opensource.org/licenses/MIT.
 
 Development process
