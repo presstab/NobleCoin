@@ -25,10 +25,11 @@ namespace Checkpoints
 			(	10000, uint256("0x621cb4ceab38c59da38cfe59c5e9547f0bbf324c374de8111fc6a15f31a39452"))
 			(	50000, uint256("0xe8358688715339d51e0450bd1e9e3749bd940b31d4fc90b9eaf4530b2c8ffb9b"))		
 			(	100000, uint256("0xdaa983f98f6cf60f98dcd3151fe82b16f7825fecc657f0c29e13ac62d0351e81"))
+			(	140000, uint256("0x8b525c5c5ac84021d5aae16b8d85a3977a91461c157733423de756fe32ce1637"))
+			(	170000, uint256("0x8fd23e16bc80406154df4cf083ba35fe53d876a3ead261af86f8cfbaef344919"))
 			;
 
-			
-
+		
     bool CheckBlock(int nHeight, const uint256& hash)
     {
         if (fTestNet) return true; // Testnet has no checkpoints
