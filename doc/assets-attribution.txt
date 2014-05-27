@@ -1,6 +1,3 @@
-Copyright (c) 2014 NobleCoin Developers (Packaged for Version 1.1 2014)
-Distributed under the MIT/X11 software license, see the accompanying file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
 Icon: src/qt/res/icons/clock*.png, src/qt/res/icons/tx*.png,
       src/qt/res/src/clock_green.svg, src/qt/res/src/clock1.svg,
       src/qt/res/src/clock2.svg, src/qt/res/src/clock3.svg,
