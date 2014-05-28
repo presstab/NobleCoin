@@ -16,7 +16,6 @@ namespace Checkpoints
 {
     typedef std::map<int, uint256> MapCheckpoints;
 
-	// no checkpoint now, can be added in later releases
     static MapCheckpoints mapCheckpoints =
             boost::assign::map_list_of
             (     0, uint256("0xdbf8ee8b91b5f03d7786cb1d58f2588538b2d48d8c23a7913db5aac7bb58c481"))
