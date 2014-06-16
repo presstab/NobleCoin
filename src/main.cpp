@@ -3270,7 +3270,7 @@ void SHA256Transform(void* pstate, void* pinput, const void* pinit)
 // between calls, but periodically or if nNonce is 0xffff0000 or above,
 // the block is rebuilt and nNonce starts over at zero.
 //
-unsigned int static ScanHash_CryptoPP(char* pmidstate, char* pdata, char* phash1, char* phash, unsigned int& nHashesDone)
+/*unsigned int static ScanHash_CryptoPP(char* pmidstate, char* pdata, char* phash1, char* phash, unsigned int& nHashesDone)
 {
     unsigned int& nNonce = *(unsigned int*)(pdata + 12);
     for (;;)
@@ -3294,7 +3294,7 @@ unsigned int static ScanHash_CryptoPP(char* pmidstate, char* pdata, char* phash1
             return (unsigned int) -1;
         }
     }
-}
+}*/
 
 // Some explaining would be appreciated
 class COrphan
@@ -3789,8 +3789,8 @@ void GenerateBitcoins(bool fGenerate, CWallet* pwallet)
         printf("Starting %d BitcoinMiner threads\n", nAddThreads);
         for (int i = 0; i < nAddThreads; i++)
         {
-            if (!CreateThread(ThreadBitcoinMiner, pwallet))
-                printf("Error: CreateThread(ThreadBitcoinMiner) failed\n");
+            if (!NewThread(ThreadBitcoinMiner, pwallet))
+                printf("Error: NewThread(ThreadBitcoinMiner) failed\n");
             Sleep(10);
         }
     }
