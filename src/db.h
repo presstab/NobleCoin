@@ -48,6 +48,16 @@ public:
 
     CDBEnv();
     ~CDBEnv();
+	
+	/*
+     * Verify that database file strFile is OK. If it is not,
+     * call the callback to try to recover.
+     * This must be called BEFORE strFile is opened.
+     * Returns true if strFile is OK.
+     */
+    enum VerifyResult { VERIFY_OK, RECOVER_OK, RECOVER_FAIL };
+    VerifyResult Verify(std::string strFile, bool (*recoverFunc)(CDBEnv& dbenv, std::string strFile));
+	
     bool Open(boost::filesystem::path pathEnv_);
     void Close();
     void Flush(bool fShutdown);

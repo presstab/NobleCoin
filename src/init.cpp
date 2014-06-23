@@ -493,7 +493,7 @@ bool AppInit2()
     int64 nStart;
 
 	// ********************************************************* Step 4: verify database integrity
-	 uiInterface.InitMessage(_("Verifying database integrity..."));
+	/* uiInterface.InitMessage(_("Verifying database integrity..."));
 
     if (!bitdb.Open(GetDataDir()))
     {
@@ -519,11 +519,11 @@ bool AppInit2()
                                      " Original wallet.dat saved as wallet.{timestamp}.bak in %s; if"
                                      " your balance or transactions are incorrect you should"
                                      " restore from a backup."), strDataDir.c_str());
-            uiInterface.ThreadSafeMessageBox(msg, _("NobleCoin"), CClientUIInterface::MSG_WARNING);
+            uiInterface.ThreadSafeMessageBox(msg, _("NobleCoin"), CClientUIInterface::OK | CClientUIInterface::MODAL);
         }
         if (r == CDBEnv::RECOVER_FAIL)
             return InitError(_("wallet.dat corrupt, salvage failed"));
-    }
+    }*/
 	
     // ********************************************************* Step 6: network initialization
 
@@ -704,17 +704,11 @@ bool AppInit2()
     nStart = GetTimeMillis();
     bool fFirstRun = true;
     pwalletMain = new CWallet("wallet.dat");
-    DBErrors nLoadWalletRet = pwalletMain->LoadWallet(fFirstRun);
+    int nLoadWalletRet = pwalletMain->LoadWallet(fFirstRun);
     if (nLoadWalletRet != DB_LOAD_OK)
     {
         if (nLoadWalletRet == DB_CORRUPT)
             strErrors << _("Error loading wallet.dat: Wallet corrupted") << "\n";
-		else if (nLoadWalletRet == DB_NONCRITICAL_ERROR)
-        {
-            string msg(_("Warning: error reading wallet.dat! All keys read correctly, but transaction data"
-                         " or address book entries might be missing or incorrect."));
-            uiInterface.ThreadSafeMessageBox(msg, _("NobleCoin"), CClientUIInterface::MSG_WARNING);
-        }
         else if (nLoadWalletRet == DB_TOO_NEW)
             strErrors << _("Error loading wallet.dat: Wallet requires newer version of NobleCoin") << "\n";
         else if (nLoadWalletRet == DB_NEED_REWRITE)
