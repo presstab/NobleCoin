@@ -324,9 +324,8 @@ bool AppInit2()
     _set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
 #endif
 #ifndef WIN32
-    umask(077);
-#endif
-#ifndef WIN32
+	umask(077);
+	
     // Clean shutdown on SIGTERM
     struct sigaction sa;
     sa.sa_handler = HandleSIGTERM;
