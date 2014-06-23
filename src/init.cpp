@@ -16,6 +16,7 @@
 #include <boost/filesystem/convenience.hpp>
 #include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <openssl/crypto.h>
 
 #ifndef WIN32
 #include <signal.h>
@@ -26,6 +27,12 @@ using namespace boost;
 
 CWallet* pwalletMain;
 CClientUIInterface uiInterface;
+unsigned int nNodeLifespan;
+bool fConfChange;
+bool fEnforceCanonical;
+unsigned int nMinerSleep;
+	
+bool fUseFastIndex;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -276,6 +283,13 @@ std::string HelpMessage()
         "  -rpcallowip=<ip>       " + _("Allow JSON-RPC connections from specified IP address") + "\n" +
         "  -rpcconnect=<ip>       " + _("Send commands to node running on <ip> (default: 127.0.0.1)") + "\n" +
         "  -blocknotify=<cmd>     " + _("Execute command when the best block changes (%s in cmd is replaced by block hash)") + "\n" +
+		"  -walletnotify=<cmd>    " + _("Execute command when a wallet transaction changes (%s in cmd is replaced by TxID)") + "\n" +
+        "  -newtxnotify=<cmd>     " + _("Execute command when a new wallet transaction occurs (%s in cmd is replaced by TxID)") + "\n" +
+        "  -confirmnotify=<cmd>   " + _("Execute command when a wallet transaction is confirmed (%s in cmd is replaced by TxID)") + "\n" +
+        "  -powblockfoundnotify=<cmd>" + _("Execute command when a Proof of Work block is found (%s in cmd is replaced by block hash)") + "\n" +
+        "  -posblockfoundnotify=<cmd>" + _("Execute command when a Proof of Stake block is found (%s in cmd is replaced by block hash)") + "\n" +
+        "  -confchange            " + _("Require a confirmations for change (default: 0)") + "\n" +
+        "  -enforcecanonical      " + _("Enforce transaction scripts to use canonical PUSH operators (default: 1)") + "\n" +
         "  -upgradewallet         " + _("Upgrade wallet to latest format") + "\n" +
         "  -keypool=<n>           " + _("Set key pool size to <n> (default: 100)") + "\n" +
         "  -rescan                " + _("Rescan the block chain for missing wallet transactions") + "\n" +
@@ -338,6 +352,8 @@ bool AppInit2()
         SoftSetBoolArg("-irc", true);
 //    }
 
+	fUseFastIndex = GetBoolArg("-fastindex", true);
+	
     if (mapArgs.count("-bind")) {
         // when specifying an explicit binding address, you want to listen on it
         // even when -connect or -proxy is specified
@@ -418,6 +434,9 @@ bool AppInit2()
         if (nTransactionFee > 0.25 * COIN)
             InitWarning(_("Warning: -paytxfee is set very high. This is the transaction fee you will pay if you send a transaction."));
     }
+	
+	fConfChange = GetBoolArg("-confchange", false);
+	fEnforceCanonical = GetBoolArg("-enforcecanonical", true);
 
     if (mapArgs.count("-mininput"))
     {
@@ -427,6 +446,8 @@ bool AppInit2()
 
     // ********************************************************* Step 4: application initialization: dir lock, daemonize, pidfile, debug log
 
+	std::string strDataDir = GetDataDir().string();
+	
     // Make sure only a single NobleCoin process is using the data directory.
     boost::filesystem::path pathLockFile = GetDataDir() / ".lock";
     FILE* file = fopen(pathLockFile.string().c_str(), "a"); // empty lock file; created if it doesn't exist.
@@ -471,7 +492,40 @@ bool AppInit2()
 
     int64 nStart;
 
-    // ********************************************************* Step 5: network initialization
+	// ********************************************************* Step 4: verify database integrity
+	 uiInterface.InitMessage(_("Verifying database integrity..."));
+
+    if (!bitdb.Open(GetDataDir()))
+    {
+        string msg = strprintf(_("Error initializing database environment %s!"
+                                 " To recover, BACKUP THAT DIRECTORY, then remove"
+                                 " everything from it except for wallet.dat."), strDataDir.c_str());
+        return InitError(msg);
+    }
+
+    if (GetBoolArg("-salvagewallet"))
+    {
+        // Recover readable keypairs:
+        if (!CWalletDB::Recover(bitdb, "wallet.dat", true))
+            return false;
+    }
+
+    if (filesystem::exists(GetDataDir() / "wallet.dat"))
+    {
+        CDBEnv::VerifyResult r = bitdb.Verify("wallet.dat", CWalletDB::Recover);
+        if (r == CDBEnv::RECOVER_OK)
+        {
+            string msg = strprintf(_("Warning: wallet.dat corrupt, data salvaged!"
+                                     " Original wallet.dat saved as wallet.{timestamp}.bak in %s; if"
+                                     " your balance or transactions are incorrect you should"
+                                     " restore from a backup."), strDataDir.c_str());
+            uiInterface.ThreadSafeMessageBox(msg, _("NobleCoin"), CClientUIInterface::MSG_WARNING);
+        }
+        if (r == CDBEnv::RECOVER_FAIL)
+            return InitError(_("wallet.dat corrupt, salvage failed"));
+    }
+	
+    // ********************************************************* Step 6: network initialization
 
     int nSocksVersion = GetArg("-socks", 5);
 
@@ -493,6 +547,13 @@ bool AppInit2()
         }
     }
 
+	#if defined(USE_IPV6)
+	#if ! USE_IPV6
+		else
+        SetLimited(NET_IPV6);
+	#endif
+	#endif
+	
     CService addrProxy;
     bool fProxy = false;
     if (mapArgs.count("-proxy")) {
@@ -568,10 +629,20 @@ bool AppInit2()
         }
     }
 
+	if (mapArgs.count("-reservebalance")) // ppcoin: reserve balance amount
+    {
+        int64 nReserveBalance = 0;
+        if (!ParseMoney(mapArgs["-reservebalance"], nReserveBalance))
+        {
+            InitError(_("Invalid amount for -reservebalance=<amount>"));
+            return false;
+        }
+    }
+	
     BOOST_FOREACH(string strDest, mapMultiArgs["-seednode"])
         AddOneShot(strDest);
-
-    // ********************************************************* Step 6: load blockchain
+		
+    // ********************************************************* Step 7: load blockchain
 
     if (GetBoolArg("-loadblockindextest"))
     {
@@ -626,18 +697,24 @@ bool AppInit2()
         return false;
     }
 
-    // ********************************************************* Step 7: load wallet
+    // ********************************************************* Step 8: load wallet
 
     uiInterface.InitMessage(_("Loading wallet..."));
     printf("Loading wallet...\n");
     nStart = GetTimeMillis();
-    bool fFirstRun;
+    bool fFirstRun = true;
     pwalletMain = new CWallet("wallet.dat");
-    int nLoadWalletRet = pwalletMain->LoadWallet(fFirstRun);
+    DBErrors nLoadWalletRet = pwalletMain->LoadWallet(fFirstRun);
     if (nLoadWalletRet != DB_LOAD_OK)
     {
         if (nLoadWalletRet == DB_CORRUPT)
             strErrors << _("Error loading wallet.dat: Wallet corrupted") << "\n";
+		else if (nLoadWalletRet == DB_NONCRITICAL_ERROR)
+        {
+            string msg(_("Warning: error reading wallet.dat! All keys read correctly, but transaction data"
+                         " or address book entries might be missing or incorrect."));
+            uiInterface.ThreadSafeMessageBox(msg, _("NobleCoin"), CClientUIInterface::MSG_WARNING);
+        }
         else if (nLoadWalletRet == DB_TOO_NEW)
             strErrors << _("Error loading wallet.dat: Wallet requires newer version of NobleCoin") << "\n";
         else if (nLoadWalletRet == DB_NEED_REWRITE)
@@ -703,10 +780,11 @@ bool AppInit2()
         printf(" rescan      %15"PRI64d"ms\n", GetTimeMillis() - nStart);
     }
 
-    // ********************************************************* Step 8: import blocks
+    // ********************************************************* Step 9: import blocks
 
     if (mapArgs.count("-loadblock"))
     {
+		uiInterface.InitMessage(_("Importing blockchain data file."));
         BOOST_FOREACH(string strFile, mapMultiArgs["-loadblock"])
         {
             FILE *file = fopen(strFile.c_str(), "rb");
@@ -715,7 +793,7 @@ bool AppInit2()
         }
     }
 
-    // ********************************************************* Step 9: load peers
+    // ********************************************************* Step 10: load peers
 
     uiInterface.InitMessage(_("Loading addresses..."));
     printf("Loading addresses...\n");
@@ -730,7 +808,7 @@ bool AppInit2()
     printf("Loaded %i addresses from peers.dat  %"PRI64d"ms\n",
            addrman.size(), GetTimeMillis() - nStart);
 
-    // ********************************************************* Step 10: start node
+    // ********************************************************* Step 11: start node
 
     if (!CheckDiskSpace())
         return false;
@@ -750,7 +828,7 @@ bool AppInit2()
     if (fServer)
         NewThread(ThreadRPCServer, NULL);
 
-    // ********************************************************* Step 11: finished
+    // ********************************************************* Step 12: finished
 
     uiInterface.InitMessage(_("Done loading"));
     printf("Done loading\n");

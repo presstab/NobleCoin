@@ -315,8 +315,8 @@ public:
     bool WriteBlockIndex(const CDiskBlockIndex& blockindex);
     bool ReadHashBestChain(uint256& hashBestChain);
     bool WriteHashBestChain(uint256 hashBestChain);
-    bool ReadBestInvalidWork(CBigNum& bnBestInvalidWork);
-    bool WriteBestInvalidWork(CBigNum bnBestInvalidWork);
+    bool ReadBestInvalidWork(CBigNum& bnBestInvalidTrust);
+    bool WriteBestInvalidWork(CBigNum bnBestInvalidTrust);
     bool LoadBlockIndex();
 private:
     bool LoadBlockIndexGuts();

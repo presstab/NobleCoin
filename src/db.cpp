@@ -446,14 +446,14 @@ bool CTxDB::WriteHashBestChain(uint256 hashBestChain)
     return Write(string("hashBestChain"), hashBestChain);
 }
 
-bool CTxDB::ReadBestInvalidWork(CBigNum& bnBestInvalidWork)
+bool CTxDB::ReadBestInvalidWork(CBigNum& bnBestInvalidTrust)
 {
-    return Read(string("bnBestInvalidWork"), bnBestInvalidWork);
+    return Read(string("bnBestInvalidTrust"), bnBestInvalidTrust);
 }
 
-bool CTxDB::WriteBestInvalidWork(CBigNum bnBestInvalidWork)
+bool CTxDB::WriteBestInvalidWork(CBigNum bnBestInvalidTrust)
 {
-    return Write(string("bnBestInvalidWork"), bnBestInvalidWork);
+    return Write(string("bnBestInvalidTrust"), bnBestInvalidTrust);
 }
 
 CBlockIndex static * InsertBlockIndex(uint256 hash)
@@ -510,13 +510,13 @@ bool CTxDB::LoadBlockIndex()
         return error("CTxDB::LoadBlockIndex() : hashBestChain not found in the block index");
     pindexBest = mapBlockIndex[hashBestChain];
     nBestHeight = pindexBest->nHeight;
-    bnBestChainWork = pindexBest->bnChainWork;
+    bnBestChainTrust = pindexBest->bnChainWork;
     printf("LoadBlockIndex(): hashBestChain=%s  height=%d  date=%s\n",
       hashBestChain.ToString().substr(0,20).c_str(), nBestHeight,
       DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
 
     // Load bnBestInvalidWork, OK if it doesn't exist
-    ReadBestInvalidWork(bnBestInvalidWork);
+    ReadBestInvalidWork(bnBestInvalidTrust);
 
     // Verify blocks in the best chain
     int nCheckLevel = GetArg("-checklevel", 1);
@@ -680,9 +680,10 @@ bool CTxDB::LoadBlockIndexGuts()
         {
             CDiskBlockIndex diskindex;
             ssValue >> diskindex;
+			uint256 blockHash = diskindex.GetBlockHash();
 
             // Construct block index object
-            CBlockIndex* pindexNew = InsertBlockIndex(diskindex.GetBlockHash());
+            CBlockIndex* pindexNew = InsertBlockIndex(blockHash);
             pindexNew->pprev          = InsertBlockIndex(diskindex.hashPrev);
             pindexNew->pnext          = InsertBlockIndex(diskindex.hashNext);
             pindexNew->nFile          = diskindex.nFile;
@@ -695,7 +696,7 @@ bool CTxDB::LoadBlockIndexGuts()
             pindexNew->nNonce         = diskindex.nNonce;
 
             // Watch for genesis block
-            if (pindexGenesisBlock == NULL && diskindex.GetBlockHash() == hashGenesisBlock)
+            if (pindexGenesisBlock == NULL && blockHash == hashGenesisBlock)
                 pindexGenesisBlock = pindexNew;
 
             if (!pindexNew->CheckIndex())

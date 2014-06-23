@@ -124,6 +124,7 @@ HEADERS += src/qt/bitcoingui.h \
     src/sync.h \
     src/util.h \
     src/uint256.h \
+	src/kernel.h \
     src/serialize.h \
     src/strlcpy.h \
     src/main.h \
@@ -236,7 +237,8 @@ SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
     src/qt/rpcconsole.cpp \
     src/scrypt.c \
     src/qt/miningpage.cpp \
-    src/noui.cpp
+    src/noui.cpp \
+	src/kernel.cpp 
 
 RESOURCES += \
     src/qt/bitcoin.qrc
