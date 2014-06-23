@@ -55,6 +55,7 @@ static const int fHaveUPnP = false;
 
 inline int64 PastDrift(int64 nTime)   { return nTime - 60 * 60 * 2; } // up to 120 minutes from the past
 inline int64 FutureDrift(int64 nTime) { return nTime + 60 * 60 * 2; } // up to 120 minutes from the future
+int64 nMaxClockDrift = 60 * 60 * 2;
 
 extern CScript COINBASE_FLAGS;
 extern CCriticalSection cs_main;
@@ -340,6 +341,12 @@ public:
         return (nValue == -1);
     }
 
+	void SetEmpty()
+    {
+        nValue = 0;
+        scriptPubKey.clear();
+    }
+	
 	bool IsEmpty() const
     {
         return (nValue == 0 && scriptPubKey.empty());
