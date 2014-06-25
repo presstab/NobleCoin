@@ -44,6 +44,11 @@ static const int64 CENT = 1000000;
 #define ARRAYLEN(array)     (sizeof(array)/sizeof((array)[0]))
 #define printf              OutputDebugStringF
 
+#define UVOIDBEGIN(a)		((void*)&(a))
+#define CVOIDBEGIN(a)		((const void*)&(a))
+#define UINTBEGIN(a)		((uint32_t*)&(a))
+#define CUINTBEGIN(a)		((const uint32_t*)&(a))
+
 #ifndef PRI64d
 #if defined(_MSC_VER) || defined(__MSVCRT__)
 #define PRI64d  "I64d"
@@ -54,6 +59,12 @@ static const int64 CENT = 1000000;
 #define PRI64u  "llu"
 #define PRI64x  "llx"
 #endif
+#endif
+
+#if defined (_MSC_VER) || defined (__MSVCRT__)
+	#define PRIszu		"Iu"
+#else
+	#define PRIszu		"zu"
 #endif
 
 // This is needed because the foreach macro can't get over the comma in pair<t1, t2>

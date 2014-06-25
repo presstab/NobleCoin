@@ -13,6 +13,7 @@
 #include "script.h"
 #include "db.h"
 #include "scrypt.h"
+#include "scrypt_mine.h"
 
 #include <list>
 
@@ -55,7 +56,7 @@ static const int fHaveUPnP = false;
 
 inline int64 PastDrift(int64 nTime)   { return nTime - 60 * 60 * 2; } // up to 120 minutes from the past
 inline int64 FutureDrift(int64 nTime) { return nTime + 60 * 60 * 2; } // up to 120 minutes from the future
-int64 nMaxClockDrift = 60 * 60 * 2;
+static const int64 nMaxClockDrift = 2 * 60 * 60;        // two hours
 
 extern CScript COINBASE_FLAGS;
 extern CCriticalSection cs_main;
@@ -63,6 +64,7 @@ extern std::map<uint256, CBlockIndex*> mapBlockIndex;
 extern uint256 hashGenesisBlock;
 extern CBlockIndex* pindexGenesisBlock;
 extern int nBestHeight;
+extern unsigned int nStakeMinAge;
 extern CBigNum bnBestChainTrust;
 extern CBigNum bnBestInvalidTrust;
 extern uint256 hashBestChain;
@@ -104,18 +106,21 @@ bool ProcessMessages(CNode* pfrom);
 bool SendMessages(CNode* pto, bool fSendTrickle);
 bool LoadExternalBlockFile(FILE* fileIn);
 void GenerateBitcoins(bool fGenerate, CWallet* pwallet);
-CBlock* CreateNewBlock(CReserveKey& reservekey);
+CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake=false);
 void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& nExtraNonce);
 void FormatHashBuffers(CBlock* pblock, char* pmidstate, char* pdata, char* phash1);
 bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey);
-unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake);
+
 bool CheckProofOfWork(uint256 hash, unsigned int nBits);
+int64 GetProofOfWorkReward(int nHeight, int64 nFees, uint256 prevHash);
+int64 GetProofOfStakeReward(int64 nCoinAge, unsigned int nBits, unsigned int nTime, bool bCoinYearOnly=false);
 unsigned int ComputeMinWork(unsigned int nBase, int64 nTime);
 int GetNumBlocksOfPeers();
 bool IsInitialBlockDownload();
 std::string GetWarnings(std::string strFor);
 bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock);
 bool GetWalletFile(CWallet* pwallet, std::string &strWalletFileOut);
+const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfStake);
 
 /** Position on disk for a particular transaction. */
 class CDiskTxPos
@@ -381,9 +386,6 @@ public:
     }
 };
 
-
-
-
 enum GetMinFee_mode
 {
     GMF_BLOCK,
@@ -568,50 +570,7 @@ public:
         return dPriority > COIN * 1440 / 250; // NobleCoin: 1440 blocks found a day. Priority cut-off is 1 NobleCoin day / 250 bytes.
     }
 
-    int64 GetMinFee(unsigned int nBlockSize=1, bool fAllowFree=true, enum GetMinFee_mode mode=GMF_BLOCK) const
-    {
-        // Base fee is either MIN_TX_FEE or MIN_RELAY_TX_FEE
-        int64 nBaseFee = (mode == GMF_RELAY) ? MIN_RELAY_TX_FEE : MIN_TX_FEE;
-
-        unsigned int nBytes = ::GetSerializeSize(*this, SER_NETWORK, PROTOCOL_VERSION);
-        unsigned int nNewBlockSize = nBlockSize + nBytes;
-        int64 nMinFee = (1 + (int64)nBytes / 1000) * nBaseFee;
-
-        if (fAllowFree)
-        {
-            if (nBlockSize == 1)
-            {
-                // Transactions under 10K are free
-                // (about 4500bc if made of 50bc inputs)
-                if (nBytes < 10000)
-                    nMinFee = 0;
-            }
-            else
-            {
-                // Free transaction area
-                if (nNewBlockSize < 27000)
-                    nMinFee = 0;
-            }
-        }
-
-        // To limit dust spam, add MIN_TX_FEE/MIN_RELAY_TX_FEE for any output that is less than 0.01
-        BOOST_FOREACH(const CTxOut& txout, vout)
-            if (txout.nValue < CENT)
-                nMinFee += nBaseFee;
-
-        // Raise the price as the block approaches full
-        if (nBlockSize != 1 && nNewBlockSize >= MAX_BLOCK_SIZE_GEN/2)
-        {
-            if (nNewBlockSize >= MAX_BLOCK_SIZE_GEN)
-                return MAX_MONEY;
-            nMinFee *= MAX_BLOCK_SIZE_GEN / (MAX_BLOCK_SIZE_GEN - nNewBlockSize);
-        }
-
-        if (!MoneyRange(nMinFee))
-            nMinFee = MAX_MONEY;
-        return nMinFee;
-    }
-
+	int64 GetMinFee(unsigned int nBlockSize=1, bool fAllowFree=true, enum GetMinFee_mode mode=GMF_BLOCK, unsigned int nBytes=0) const;
 
     bool ReadFromDisk(CDiskTxPos pos, FILE** pfileRet=NULL)
     {
@@ -1686,7 +1645,14 @@ public:
 
     uint256 GetHash() const
     {
-        return SerializeHash(*this);
+        uint256 thash;
+        void * scratchbuff = scrypt_buffer_alloc();
+
+        scrypt_hash(CVOIDBEGIN(nVersion), sizeof(block_header), UINTBEGIN(thash), scratchbuff);
+
+        scrypt_buffer_free(scratchbuff);
+
+        return thash;
     }
 
     bool IsInEffect() const
