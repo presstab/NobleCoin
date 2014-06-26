@@ -41,8 +41,8 @@ static const int64 TOTAL_GENERATION = MAX_MONEY;
 static const double SERVICE_TAX_PERCENTAGE = 0.02;
 static const int64 MAX_MINT_PROOF_OF_STAKE = 1.05 * COIN;	// 105% annual interest
 
-static const int64 FORKHEIGHT = 235000; //height of the fork
-static const int CUTOFF_POW_BLOCK = 235000;
+static const int64 FORKHEIGHT = 2350000; //height of the fork
+static const int CUTOFF_POW_BLOCK = 2350000;
 
 inline bool MoneyRange(int64 nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
 static const int COINBASE_MATURITY = 30;
