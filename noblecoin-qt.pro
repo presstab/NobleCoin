@@ -42,6 +42,18 @@ contains(RELEASE, 1) {
     }
 }
 
+!win32 {
+# for extra security against potential buffer overflows: enable GCCs Stack Smashing Protection
+QMAKE_CXXFLAGS *= -fstack-protector-all --param ssp-buffer-size=1
+QMAKE_LFLAGS *= -fstack-protector-all --param ssp-buffer-size=1
+# We need to exclude this for Windows cross compile with MinGW 4.2.x, as it will result in a non-working executable!
+# This can be enabled for Windows, when we switch to MinGW >= 4.4.x.
+}
+# for extra security on Windows: enable ASLR and DEP via GCC linker flags
+win32:QMAKE_LFLAGS *= -Wl,--dynamicbase -Wl,--nxcompat
+# on Windows: enable GCC large address aware linker flag
+win32:QMAKE_LFLAGS *= -Wl,--large-address-aware -static
+
 # use: qmake "USE_QRCODE=1"
 # libqrencode (http://fukuchi.org/works/qrencode/index.en.html) must be installed for support
 contains(USE_QRCODE, 1) {
@@ -85,13 +97,6 @@ contains(BITCOIN_NEED_QT_PLUGINS, 1) {
     QTPLUGIN += qcncodecs qjpcodecs qtwcodecs qkrcodecs qtaccessiblewidgets
 }
 
-!windows {
-    # for extra security against potential buffer overflows
-    QMAKE_CXXFLAGS += -fstack-protector
-    QMAKE_LFLAGS += -fstack-protector
-    # do not enable this on windows, as it will result in a non-working executable!
-}
-
 # regenerate src/build.h
 !windows|contains(USE_BUILD_INFO, 1) {
     genbuild.depends = FORCE
@@ -102,6 +107,8 @@ contains(BITCOIN_NEED_QT_PLUGINS, 1) {
     DEFINES += HAVE_BUILD_INFO
 }
 
+QMAKE_CXXFLAGS += -msse2
+QMAKE_CFLAGS += -msse2
 QMAKE_CXXFLAGS_WARN_ON = -fdiagnostics-show-option -Wall -Wextra -Wformat -Wformat-security -Wno-unused-parameter -D__NO_SYSTEM_INCLUDES
 
 # Input
@@ -129,6 +136,7 @@ HEADERS += src/qt/bitcoingui.h \
     src/uint256.h \
 	src/kernel.h \
 	src/scrypt_mine.h \
+	src/pbkdf2.h \
     src/serialize.h \
     src/strlcpy.h \
     src/main.h \
@@ -245,7 +253,10 @@ SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
     src/qt/miningpage.cpp \
     src/noui.cpp \
 	src/kernel.cpp \
-	src/scrypt_mine.cpp
+	src/scrypt-x86.S \
+    src/scrypt-x86_64.S \
+	src/scrypt_mine.cpp \
+	src/pbkdf2.cpp 
 
 RESOURCES += \
     src/qt/bitcoin.qrc
