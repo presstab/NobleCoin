@@ -45,7 +45,7 @@ static CBigNum bnProofOfStakeLimit(~uint256(0) >> 20);
 static CBigNum bnProofOfWorkLimitTestNet(~uint256(0) >> 20);
 static CBigNum bnProofOfStakeLimitTestNet(~uint256(0) >> 20);
 
-unsigned int nStakeMinAge = 60 * 5;	// minimum age for coin age: 5 minutes for testing
+unsigned int nStakeMinAge = 60 * 60 * 24 * 5;	// minimum age for coin age: 5 days for testing
 unsigned int nStakeMaxAge = 60 * 60 * 24 * 20;	// stake age of full weight: 20d
 unsigned int nStakeTargetSpacing = 60;			// 60 sec block spacing
 
@@ -937,12 +937,14 @@ int64 GetProofOfWorkReward(int nHeight, int64 nFees, uint256 prevHash)
 // simple algorithm, not depend on the diff
 int64 GetProofOfStakeReward(int64 nCoinAge, unsigned int nBits, unsigned int nTime, bool bCoinYearOnly)
 {
-    int64 nRewardCoinYear;
+    int64 nRewardCoinYear, nSubsidyLimit = 10000 * COIN; // 10k max stake reward
 
 	nRewardCoinYear = MAX_MINT_PROOF_OF_STAKE;
 
     int64 nSubsidy = nCoinAge * nRewardCoinYear / 365;
 
+	nSubsidy = min(nSubsidy, nSubsidyLimit);
+	
 	// printf("nSubsidy=%"PRI64d", nCoinAge=%"PRI64d", nRewardCoinYear=%"PRI64d", \n", nSubsidy, nCoinAge, nRewardCoinYear);
     if (fDebug && GetBoolArg("-printcreation"))
         printf("GetProofOfStakeReward(): create=%s nCoinAge=%"PRI64d" nBits=%d\n", FormatMoney(nSubsidy).c_str(), nCoinAge, nBits);
